@@ -9,6 +9,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,9 @@ import java.util.function.Function;
 
 @Service
 public class JwtService {
+    @Autowired
+    private IUserService userService;
+
     @Value("${jwt.secret.key}")
     private String JWT_SECRET;
     private final String ROLE_ADMIN = "ROLE_ADMIN";
@@ -26,11 +30,6 @@ public class JwtService {
     @Value("${jwt.expiration.time}")
     private long EXPIRATION_TIME;
 
-    private final IUserService userService;
-
-    public JwtService(IUserService userService) {
-        this.userService = userService;
-    }
 
     //Tạo token dựa trên username
     public String generateToken(String username) {

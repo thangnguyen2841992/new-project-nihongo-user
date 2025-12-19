@@ -10,4 +10,5 @@ import java.util.Optional;
 public interface IUserService extends UserDetailsService {
     Object registerUser(RegisterForm registerForm) throws IOException;
     Optional<User> findByUsername(String username);
+    void registerAdmin() throws IOException;
 }

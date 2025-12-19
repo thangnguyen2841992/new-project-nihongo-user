@@ -4,11 +4,15 @@ import com.thang.user.model.dto.RegisterForm;
 import com.thang.user.model.entity.Role;
 import com.thang.user.model.entity.User;
 import com.thang.user.repository.IUserRepository;
+import com.thang.user.service.role.IRoleService;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -21,13 +25,32 @@ import java.util.stream.Collectors;
 
 @Service
 public class UserServiceImpl implements IUserService {
-    private final IUserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
 
-    public UserServiceImpl(IUserRepository userRepository, PasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
+    @Autowired
+    private IUserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private IRoleService roleService;
+
+    @PostConstruct
+    public void init() throws IOException {
+        List<Role> roles = this.roleService.getRoles();
+        if (roles.isEmpty()) {
+            this.roleService.addRole(new Role("ROLE_ADMIN"));
+            this.roleService.addRole(new Role("ROLE_USER"));
+        }
+        Optional<User> userOptional = findByUsername("admin");
+        if (userOptional.isEmpty()) {
+            registerAdmin();
+        }
     }
+
+
+    @Value("${user.avatar.default}")
+    private  String AVATAR_DEFAULT;
 
     public static boolean isValidPassword(String password) {
         // Regex pattern
@@ -69,6 +92,32 @@ public class UserServiceImpl implements IUserService {
         return this.userRepository.findByUsername(username);
     }
 
+    @Override
+    public void registerAdmin() throws IOException {
+        User newUser = new User();
+        newUser.setUsername("admin");
+        newUser.setFirstName("The");
+        newUser.setLastName("Boss");
+        newUser.setFullName(newUser.getFirstName() + " " + newUser.getLastName());
+        newUser.setPassword(new BCryptPasswordEncoder().encode("thuThuy@1"));
+        newUser.setRoles(getRole("ROLE_ADMIN"));
+        newUser.setActive(true);
+        newUser.setCodeActive(createActiveCode());
+        newUser.setDateCreated(new Date());
+        newUser.setEmail("nguyenthiquy29tbdl@gmail.com");
+        newUser.setPhoneNumber("0989712888");
+        newUser.setDateOfBirth(new Date());
+        newUser.setGender(0);
+        newUser.setAvatar(AVATAR_DEFAULT);
+        newUser.setBlocked(false);
+        newUser.setAddress("Hà Nội");
+        this.userRepository.save(newUser);
+    }
+
+    private String createActiveCode() {
+        return UUID.randomUUID().toString();
+    }
+
     private User createUser(RegisterForm registerForm) {
         User newUser = new User();
         setUserDetails(newUser, registerForm);
@@ -87,17 +136,18 @@ public class UserServiceImpl implements IUserService {
 
         user.setFirstName(registerForm.getFirstName());
         user.setLastName(registerForm.getLastName());
+        user.setFullName(user.getFirstName() + " " + user.getLastName());
         user.setUsername(registerForm.getUsername());
         user.setEmail(registerForm.getEmail());
         user.setPassword(passwordEncoder.encode(registerForm.getPassword()));
         user.setPhoneNumber(registerForm.getPhoneNumber());
         user.setAddress(registerForm.getAddress());
-//        user.setCodeActive(createActiveCode());
+        user.setCodeActive(createActiveCode());
         user.setActive(false);
         user.setGender(registerForm.getGender());
-//        user.setAvatar(AVATAR_DEFAULT);
-//        user.setRoles(getRole("ROLE_USER"));
-//        user.setBlock(false);
+        user.setAvatar(AVATAR_DEFAULT);
+        user.setRoles(getRole("ROLE_USER"));
+        user.setBlocked(false);
     }
 
     @Override
@@ -108,5 +158,12 @@ public class UserServiceImpl implements IUserService {
 
     private Collection<? extends GrantedAuthority> rolesToAuthorities(Collection<Role> roles) {
         return roles.stream().map(role -> new SimpleGrantedAuthority(role.getRoleName())).collect(Collectors.toList());
+    }
+
+    private Set<Role> getRole(String roleName) {
+        Set<Role> roles = new HashSet<>();
+        Optional<Role> roleOptional = this.roleService.findByRoleName(roleName);
+        roleOptional.ifPresent(roles::add);
+        return roles;
     }
 }

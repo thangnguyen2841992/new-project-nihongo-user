@@ -2,18 +2,16 @@ package com.thang.user.service.role;
 
 import com.thang.user.model.entity.Role;
 import com.thang.user.repository.IRoleRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class RoleServiceImpl implements IRoleService{
-
-    private final IRoleRepository roleRepository;
-
-    public RoleServiceImpl(IRoleRepository roleRepository) {
-        this.roleRepository = roleRepository;
-    }
+    @Autowired
+    private IRoleRepository roleRepository;
 
     @Override
     public List<Role> getRoles() {
@@ -21,7 +19,12 @@ public class RoleServiceImpl implements IRoleService{
     }
 
     @Override
-    public Role addRole(Role role) {
-        return this.roleRepository.save(role);
+    public void addRole(Role role) {
+        this.roleRepository.save(role);
+    }
+
+    @Override
+    public Optional<Role> findByRoleName(String name) {
+        return this.roleRepository.findByRoleName(name);
     }
 }

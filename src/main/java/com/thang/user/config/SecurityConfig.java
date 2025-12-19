@@ -1,9 +1,13 @@
 package com.thang.user.config;
 
 import com.thang.user.model.entity.Role;
+import com.thang.user.model.entity.User;
 import com.thang.user.service.jwt.JwtFilter;
+import com.thang.user.service.role.IRoleService;
 import com.thang.user.service.role.RoleServiceImpl;
+import com.thang.user.service.user.IUserService;
 import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -22,16 +26,17 @@ import org.springframework.web.cors.CorsConfiguration;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 @Configuration
 public class SecurityConfig {
-    private final RoleServiceImpl roleService;
-    private final JwtFilter jwtFilter;
+    @Autowired
+    private IRoleService roleService;
+    @Autowired
+    private JwtFilter jwtFilter;
+    @Autowired
+    private IUserService userService;
 
-    public SecurityConfig(RoleServiceImpl roleService, JwtFilter jwtFilter) {
-        this.roleService = roleService;
-        this.jwtFilter = jwtFilter;
-    }
 
     @Bean
     PasswordEncoder passwordEncoder() {  // Mã hóa password
@@ -43,18 +48,7 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
-    @PostConstruct
-    public void init() throws IOException {
-        List<Role> roles = this.roleService.getRoles();
-        if (roles.isEmpty()) {
-            this.roleService.addRole(new Role("ROLE_ADMIN"));
-            this.roleService.addRole(new Role("ROLE_USER"));
-        }
-//        Optional<User> userOptional = this.authService.findByUsername("admin");
-//        if (userOptional.isEmpty()) {
-//            this.authService.registerAdmin();
-//        }
-    }
+
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
